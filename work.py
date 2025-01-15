@@ -4,6 +4,7 @@ from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.anchorlayout import AnchorLayout
+from kivy.uix.image import Image
 from kivy.clock import Clock
 import random
 
@@ -66,14 +67,46 @@ class GameScreen(Screen):
         back_button.bind(on_press=self.go_back)
         anchor_layout.add_widget(back_button)
 
+        # มอนิเตอร์แสดงสถานะ
+        self.monitor_label = Label(
+            text="Game Status: Ready to start!",
+            font_size=12,
+            size_hint=(1, 0.1),
+            halign="center",
+            valign="middle",
+            size=(400, 50),
+        )
+        main_layout.add_widget(self.monitor_label)
+
+        # เพิ่ม Layout สำหรับมอนสเตอร์
+        self.monster_layout = BoxLayout(orientation="vertical", spacing=10, padding=20)
+
+        self.monster_image = Image(
+            source="monster.png", size_hint=(0.09, 0.5), pos_hint={"center_x": 0.5}
+        )
+        self.monster_label = Label(
+            text="Monster: Unknown",
+            font_size=16,
+            size_hint=(1, 1),
+            halign="center",
+            valign="middle",
+        )
+
+        self.monster_layout.add_widget(self.monster_image)
+        self.monster_layout.add_widget(self.monster_label)
+
+        main_layout.add_widget(self.monster_layout)
+
         # เพิ่ม Layout ทั้งหมดในหน้า
         self.add_widget(main_layout)
         self.add_widget(anchor_layout_temp)
         self.add_widget(anchor_layout)
 
-        # เรียกใช้งานฟังก์ชันอัปเดตค่าอุณหภูมิ
+        # เรียกใช้งานฟังก์ชันอัปเดตค่าอุณหภูมิและมอนสเตอร์
         self.update_temperature(0)  # เรียกใช้เพื่อสุ่มอุณหภูมิเมื่อเริ่มต้น
+        self.update_monster()
         Clock.schedule_interval(self.update_temperature, 60)
+        Clock.schedule_interval(self.update_monster, 30)  # เปลี่ยนมอนสเตอร์ทุก 30 วินาที
 
     def update_temperature(self, dt):
         # สุ่มค่าอุณหภูมิ
@@ -88,6 +121,23 @@ class GameScreen(Screen):
 
         # อัปเดตข้อความอุณหภูมิ
         self.temp_label.text = f"{new_temp} °C"
+
+        # อัปเดตมอนิเตอร์สถานะ
+        self.monitor_label.text = f"Game Status: Temperature updated to {new_temp} °C"
+
+    def update_monster(self, dt=None):
+        # สุ่มเลือกมอนสเตอร์
+        monsters = ["Griffin"]
+        monster = random.choice(monsters)
+
+        # อัปเดตรูปภาพมอนสเตอร์ (ถ้ามีรูปภาพตามชื่อมอนสเตอร์)
+        self.monster_image.source = f"{monster.lower()}.png"
+
+        # อัปเดตชื่อมอนสเตอร์
+        self.monster_label.text = f"Monster: {monster}"
+
+        # อัปเดตมอนิเตอร์สถานะ
+        self.monitor_label.text = f"Game Status: monster : {monster}"
 
     def go_back(self, instance):
         # เปลี่ยนกลับไปยังหน้าเริ่มต้น
