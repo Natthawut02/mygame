@@ -25,8 +25,8 @@ class StartScreen(Screen):
         # ข้อความต้อนรับ
         welcome_label = Label(
             text="Welcome to the Game!",
-            font_size=40,
-            color=(1, 1, 1, 1),
+            font_size=60,
+            color=(0, 0, 0, 1),
         )
         layout.add_widget(welcome_label)
 
@@ -129,6 +129,31 @@ class GameScreen(Screen):
 
         main_layout.add_widget(self.monster_layout)
 
+        # Layout สำหรับรายการสิ่งของ
+        self.items_layout = BoxLayout(
+            orientation="horizontal",
+            spacing=10,
+            size_hint=(0.3, 0.1),
+            pos_hint={"x": 0, "y": 0},
+        )
+        self.items_count = {"Food": 0, "Water": 0, "Ether": 0, "Toy": 0}
+        self.item_labels = {}
+
+        for item in self.items_count:
+            item_label = Label(
+                text=f"{item}: 0",
+                font_size=12,
+                color=(1, 1, 1, 1),
+                size_hint=(None, None),
+                size=(80, 40),
+                halign="center",
+                valign="middle",
+            )
+            self.items_layout.add_widget(item_label)
+            self.item_labels[item] = item_label
+
+        layout.add_widget(self.items_layout)
+
         # เพิ่ม Layout ต่างๆ ลงในหน้า
         layout.add_widget(main_layout)
         layout.add_widget(anchor_layout_temp)
@@ -139,7 +164,7 @@ class GameScreen(Screen):
         # อัปเดตข้อมูลเริ่มต้น
         self.update_temperature(0)
         self.update_monster()
-        Clock.schedule_interval(self.update_temperature, 60)
+        Clock.schedule_interval(self.update_temperature, 120)
         Clock.schedule_interval(self.update_monster, 30)
 
     def update_temperature(self, dt):
@@ -158,6 +183,13 @@ class GameScreen(Screen):
         # อัปเดตชื่อมอนสเตอร์
         self.monster_label.text = f"Monster: {monster}"
         self.monitor_label.text = f"Game Status: Monster updated to {monster}"
+
+    def update_items(self, item_name):
+        if item_name in self.items_count:
+            self.items_count[item_name] += 1
+            self.item_labels[item_name].text = (
+                f"{item_name}: {self.items_count[item_name]}"
+            )
 
     def go_back(self, instance):
         self.manager.current = "start"
@@ -179,6 +211,18 @@ class ShopScreen(Screen):
         )
         layout.add_widget(shop_label)
 
+        # รายการสินค้า
+        self.items = ["Food", "Water", "Ether", "Toy"]
+        for item in self.items:
+            item_button = Button(
+                text=item,
+                font_size=20,
+                size_hint=(0.5, 0.2),
+                pos_hint={"center_x": 0.5},
+            )
+            item_button.bind(on_press=self.buy_item)
+            layout.add_widget(item_button)
+
         # ปุ่มย้อนกลับ
         back_button = Button(
             text="Back",
@@ -190,6 +234,12 @@ class ShopScreen(Screen):
         layout.add_widget(back_button)
 
         self.add_widget(layout)
+
+    def buy_item(self, instance):
+        item_name = instance.text
+        print(f"You selected {item_name}")
+        game_screen = self.manager.get_screen("game")
+        game_screen.update_items(item_name)
 
     def go_back(self, instance):
         self.manager.current = "start"
