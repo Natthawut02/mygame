@@ -5,7 +5,6 @@ from kivy.uix.label import Label
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.image import Image
-from kivy.uix.relativelayout import RelativeLayout
 from kivy.clock import Clock
 import random
 
@@ -14,20 +13,10 @@ import random
 class StartScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-
-        # เพิ่มรูปพื้นหลังสำหรับ StartScreen
-        background = Image(source="bk1.jpeg", allow_stretch=True, keep_ratio=False)
-        self.add_widget(background)
-
-        # Layout สำหรับปุ่มและข้อความ
         layout = BoxLayout(orientation="vertical", spacing=10, padding=20)
 
         # ข้อความต้อนรับ
-        welcome_label = Label(
-            text="Welcome to the Game!",
-            font_size=40,
-            color=(1, 1, 1, 1),
-        )
+        welcome_label = Label(text="Welcome to the Game!", font_size=30)
         layout.add_widget(welcome_label)
 
         # ปุ่มเริ่มเกม
@@ -40,24 +29,12 @@ class StartScreen(Screen):
         start_button.bind(on_press=self.start_game)
         layout.add_widget(start_button)
 
-        # ปุ่มร้านค้า
-        shop_button = Button(
-            text="Shop",
-            font_size=20,
-            size_hint=(0.5, 0.2),
-            pos_hint={"center_x": 0.5},
-        )
-        shop_button.bind(on_press=self.open_shop)
-        layout.add_widget(shop_button)
-
         # เพิ่ม Layout ลงในหน้า
         self.add_widget(layout)
 
     def start_game(self, instance):
+        # เปลี่ยนไปยังหน้าหลักของเกม
         self.manager.current = "game"
-
-    def open_shop(self, instance):
-        self.manager.current = "shop"
 
 
 # สร้างหน้าจอเล่นเกม
@@ -65,35 +42,27 @@ class GameScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        # ใช้ RelativeLayout สำหรับการจัดการวางตำแหน่งของวิดเจ็ตต่างๆ
-        layout = RelativeLayout()
-
-        # เพิ่มรูปพื้นหลังสำหรับ GameScreen
-        background = Image(source="bk2.jpeg", allow_stretch=True, keep_ratio=False)
-        layout.add_widget(background)
-
         # Layout หลัก
         main_layout = BoxLayout(orientation="vertical", spacing=10, padding=20)
 
-        # Layout สำหรับแสดงข้อความ
+        # Layout สำหรับป้ายข้อความแสดงค่าอุณหภูมิ
         anchor_layout_temp = AnchorLayout(anchor_x="left", anchor_y="top", padding=10)
         self.temp_label = Label(
             text="Temperature: -- °C",
             font_size=15,
-            color=(1, 1, 1, 1),
             size_hint=(None, None),
             size=(200, 50),
-            halign="left",
+            halign="left",  # จัดให้อยู่ซ้าย
             valign="middle",
         )
         anchor_layout_temp.add_widget(self.temp_label)
 
-        # ปุ่มย้อนกลับ
+        # Layout สำหรับปุ่ม "Back to Start"
         anchor_layout = AnchorLayout(anchor_x="right", anchor_y="top", padding=10)
         back_button = Button(
             text="Back",
             font_size=14,
-            size_hint=(0.1, 0.1),
+            size_hint=(0.05, 0.03),
         )
         back_button.bind(on_press=self.go_back)
         anchor_layout.add_widget(back_button)
@@ -102,23 +71,22 @@ class GameScreen(Screen):
         self.monitor_label = Label(
             text="Game Status: Ready to start!",
             font_size=12,
-            color=(1, 1, 1, 1),
             size_hint=(1, 0.1),
             halign="center",
             valign="middle",
+            size=(400, 50),
         )
         main_layout.add_widget(self.monitor_label)
 
-        # Layout สำหรับมอนสเตอร์
+        # เพิ่ม Layout สำหรับมอนสเตอร์
         self.monster_layout = BoxLayout(orientation="vertical", spacing=10, padding=20)
 
         self.monster_image = Image(
-            source="diji.jpeg", size_hint=(0.3, 0.5), pos_hint={"center_x": 0.5}
+            source="monster.png", size_hint=(0.09, 0.5), pos_hint={"center_x": 0.5}
         )
         self.monster_label = Label(
             text="Monster: Unknown",
             font_size=16,
-            color=(1, 1, 1, 1),
             size_hint=(1, 1),
             halign="center",
             valign="middle",
@@ -129,69 +97,50 @@ class GameScreen(Screen):
 
         main_layout.add_widget(self.monster_layout)
 
-        # เพิ่ม Layout ต่างๆ ลงในหน้า
-        layout.add_widget(main_layout)
-        layout.add_widget(anchor_layout_temp)
-        layout.add_widget(anchor_layout)
+        # เพิ่ม Layout ทั้งหมดในหน้า
+        self.add_widget(main_layout)
+        self.add_widget(anchor_layout_temp)
+        self.add_widget(anchor_layout)
 
-        self.add_widget(layout)
-
-        # อัปเดตข้อมูลเริ่มต้น
-        self.update_temperature(0)
+        # เรียกใช้งานฟังก์ชันอัปเดตค่าอุณหภูมิและมอนสเตอร์
+        self.update_temperature(0)  # เรียกใช้เพื่อสุ่มอุณหภูมิเมื่อเริ่มต้น
         self.update_monster()
         Clock.schedule_interval(self.update_temperature, 60)
-        Clock.schedule_interval(self.update_monster, 30)
+        Clock.schedule_interval(self.update_monster, 30)  # เปลี่ยนมอนสเตอร์ทุก 30 วินาที
 
     def update_temperature(self, dt):
         # สุ่มค่าอุณหภูมิ
-        new_temp = random.randint(20, 40)
-        self.temp_label.text = f"Temperature: {new_temp} °C"
+        if random.random() < 0.1:  # โอกาส 10% สำหรับค่าต่ำกว่า 25 หรือมากกว่า 35
+            new_temp = (
+                random.choice(range(15, 25))
+                if random.random() < 0.5
+                else random.choice(range(36, 45))
+            )
+        else:
+            new_temp = random.randint(25, 35)  # ค่าในช่วงปกติ
+
+        # อัปเดตข้อความอุณหภูมิ
+        self.temp_label.text = f"{new_temp} °C"
+
+        # อัปเดตมอนิเตอร์สถานะ
         self.monitor_label.text = f"Game Status: Temperature updated to {new_temp} °C"
 
     def update_monster(self, dt=None):
-        monsters = ["diji"]
+        # สุ่มเลือกมอนสเตอร์
+        monsters = ["Griffin"]
         monster = random.choice(monsters)
 
-        # อัปเดตรูปภาพมอนสเตอร์
-        self.monster_image.source = f"{monster.lower()}.jpeg"
+        # อัปเดตรูปภาพมอนสเตอร์ (ถ้ามีรูปภาพตามชื่อมอนสเตอร์)
+        self.monster_image.source = f"{monster.lower()}.png"
 
         # อัปเดตชื่อมอนสเตอร์
         self.monster_label.text = f"Monster: {monster}"
-        self.monitor_label.text = f"Game Status: Monster updated to {monster}"
+
+        # อัปเดตมอนิเตอร์สถานะ
+        self.monitor_label.text = f"Game Status: monster : {monster}"
 
     def go_back(self, instance):
-        self.manager.current = "start"
-
-
-# สร้างหน้าจอร้านค้า
-class ShopScreen(Screen):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-        # Layout หลัก
-        layout = BoxLayout(orientation="vertical", spacing=10, padding=20)
-
-        # ข้อความแสดงชื่อหน้าร้านค้า
-        shop_label = Label(
-            text="Welcome to the Shop!",
-            font_size=40,
-            color=(1, 1, 1, 1),
-        )
-        layout.add_widget(shop_label)
-
-        # ปุ่มย้อนกลับ
-        back_button = Button(
-            text="Back",
-            font_size=20,
-            size_hint=(0.5, 0.2),
-            pos_hint={"center_x": 0.5},
-        )
-        back_button.bind(on_press=self.go_back)
-        layout.add_widget(back_button)
-
-        self.add_widget(layout)
-
-    def go_back(self, instance):
+        # เปลี่ยนกลับไปยังหน้าเริ่มต้น
         self.manager.current = "start"
 
 
@@ -199,9 +148,8 @@ class ShopScreen(Screen):
 class GameApp(App):
     def build(self):
         sm = ScreenManager()
-        sm.add_widget(StartScreen(name="start"))
-        sm.add_widget(GameScreen(name="game"))
-        sm.add_widget(ShopScreen(name="shop"))
+        sm.add_widget(StartScreen(name="start"))  # เพิ่มหน้าจอเริ่มต้น
+        sm.add_widget(GameScreen(name="game"))  # เพิ่มหน้าจอเกม
         return sm
 
 
