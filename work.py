@@ -7,7 +7,9 @@ from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.image import Image
 from kivy.uix.relativelayout import RelativeLayout
 from kivy.clock import Clock
+from kivy.animation import Animation
 import random
+from kivy.uix.progressbar import ProgressBar
 
 
 # สร้างหน้าจอเริ่มเกม
@@ -106,7 +108,7 @@ class GameScreen(Screen):
         # Layout สำหรับรายการไอเท็มพร้อมรูปภาพ
         self.items_layout_with_images = BoxLayout(
             orientation="horizontal",
-            spacing=10,
+            spacing=5,
             size_hint=(0.4, 0.12),
             pos_hint={"x": 0.02, "y": 0.02},
         )
@@ -149,7 +151,7 @@ class GameScreen(Screen):
             size=(40, 40),
         )
         self.gold_label = Label(
-            text="Gold: 0",
+            text="Gold: 10",  # เริ่มต้นที่ 10 ทอง
             font_size=12,
             color=(1, 1, 1, 1),
             size_hint=(None, None),
@@ -160,6 +162,41 @@ class GameScreen(Screen):
         self.gold_layout.add_widget(self.gold_image)
         self.gold_layout.add_widget(self.gold_label)
         layout.add_widget(self.gold_layout)
+
+        # เพิ่ม ProgressBar สำหรับอาหาร
+        self.food_bar = ProgressBar(
+            max=100,
+            value=80,
+            size_hint=(0.5, 0.05),
+            pos_hint={"x": 0.3, "y": 0.2},  # ย้ายไปด้านล่าง
+        )
+        layout.add_widget(
+            Label(
+                text="Food:", size_hint=(0.2, 0.05), pos_hint={"x": 0.165, "y": 0.205}
+            )  # ย้ายไปด้านล่าง
+        )
+        layout.add_widget(self.food_bar)
+
+        # เพิ่ม ProgressBar สำหรับน้ำ
+        self.water_bar = ProgressBar(
+            max=100, value=70, size_hint=(0.5, 0.05), pos_hint={"x": 0.3, "y": 0.3}
+        )
+        layout.add_widget(
+            Label(
+                text="Water:", size_hint=(0.2, 0.05), pos_hint={"x": 0.165, "y": 0.305}
+            )
+        )
+        layout.add_widget(self.water_bar)
+
+        # ตัวอย่างปุ่มทดสอบการเพิ่มค่าอาหารและน้ำ
+        increase_button = Button(
+            text="Feed & Water", size_hint=(0.08, 0.08), pos_hint={"x": 1, "y": 1}
+        )
+        increase_button.bind(on_press=self.increase_values)
+        layout.add_widget(increase_button)
+
+        # ลดค่าหลอดอาหารและน้ำเมื่อเวลาผ่านไป
+        Clock.schedule_interval(self.decrease_values, 2)
 
         # เพิ่ม Layout ต่างๆ ลงในหน้า
         layout.add_widget(anchor_layout_temp)
@@ -172,6 +209,17 @@ class GameScreen(Screen):
         self.update_monster()
         Clock.schedule_interval(self.update_temperature, 120)
         Clock.schedule_interval(self.update_monster, 30)
+
+        # เรียกใช้ฟังก์ชันสำหรับการขยับมอนสเตอร์
+        self.animate_monster()
+
+    def animate_monster(self):
+        # สร้าง Animation สำหรับการขยับมอนสเตอร์
+        animation = Animation(
+            pos_hint={"center_x": 0.5, "center_y": 0.55}, duration=1
+        ) + Animation(pos_hint={"center_x": 0.5, "center_y": 0.5}, duration=1)
+        animation.repeat = True
+        animation.start(self.monster_image)
 
     def update_temperature(self, dt):
         # สุ่มค่าอุณหภูมิ
@@ -192,12 +240,22 @@ class GameScreen(Screen):
             with open(image_path, "rb"):
                 self.monster_image.source = image_path  # อัปเดตรูปภาพมอนสเตอร์
         except FileNotFoundError:
-            # ถ้าไม่พบไฟล์จะแสดงข้อผิดพลาด
             print(f"Error: The image file for {monster} does not exist.")
             self.monster_image.source = "default_monster.jpeg"  # แสดงภาพดีฟอลต์แทน
 
-        # อัปเดตภาพมอนสเตอร์
         self.monster_image.reload()  # ใช้ reload() เพื่อให้ภาพอัปเดตทันที
+
+    def decrease_values(self, dt):
+        if self.food_bar.value > 0:
+            self.food_bar.value -= 1
+        if self.water_bar.value > 0:
+            self.water_bar.value -= 1
+
+    def increase_values(self, instance):
+        if self.food_bar.value < 100:
+            self.food_bar.value += 10
+        if self.water_bar.value < 100:
+            self.water_bar.value += 10
 
     def go_back(self, instance):
         self.manager.current = "start"
@@ -208,10 +266,8 @@ class ShopScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        # Layout หลัก
         layout = BoxLayout(orientation="vertical", spacing=10, padding=20)
 
-        # ข้อความแสดงชื่อหน้าร้านค้า
         shop_label = Label(
             text="Welcome to the Shop!",
             font_size=40,
@@ -219,7 +275,6 @@ class ShopScreen(Screen):
         )
         layout.add_widget(shop_label)
 
-        # รายการสินค้า
         self.items = ["Food", "Water", "heater", "Toy"]
         for item in self.items:
             item_button = Button(
@@ -231,7 +286,6 @@ class ShopScreen(Screen):
             item_button.bind(on_press=self.buy_item)
             layout.add_widget(item_button)
 
-        # ปุ่มย้อนกลับ
         back_button = Button(
             text="Back",
             font_size=20,
@@ -246,14 +300,37 @@ class ShopScreen(Screen):
     def buy_item(self, instance):
         item_name = instance.text
         game_screen = self.manager.get_screen("game")
-        if game_screen.gold_label.text.split(": ")[1].isdigit():
-            current_gold = int(game_screen.gold_label.text.split(": ")[1])
-            if current_gold > 0:
-                game_screen.items_count[item_name] += 1
-                game_screen.item_labels[item_name].text = (
-                    f"{item_name}: {game_screen.items_count[item_name]}"
-                )
-                game_screen.gold_label.text = f"Gold: {current_gold - 1}"
+
+        # ตรวจสอบว่ามีทองคำเพียงพอหรือไม่
+        current_gold = int(game_screen.gold_label.text.split(": ")[1])
+        if current_gold > 0:  # ถ้ามีทองคำเพียงพอ
+            # อัปเดตจำนวนสินค้า
+            game_screen.items_count[item_name] += 1
+            game_screen.item_labels[item_name].text = (
+                f"{item_name}: {game_screen.items_count[item_name]}"
+            )
+            # หักทองคำ
+            game_screen.gold_label.text = f"Gold: {current_gold - 1}"
+        else:
+            # แสดงข้อความแจ้งเตือน
+            self.show_alert("Not enough gold to buy this item!")
+
+    def show_alert(self, message):
+        # ฟังก์ชันสำหรับแสดงข้อความแจ้งเตือน
+        alert = Label(
+            text=message,
+            font_size=20,
+            color=(1, 0, 0, 1),
+            size_hint=(0.5, 0.1),
+            pos_hint={"center_x": 0.5, "center_y": 0.5},
+        )
+        self.add_widget(alert)
+
+        # ลบข้อความหลังจาก 2 วินาที
+        def remove_alert(dt):
+            self.remove_widget(alert)
+
+        Clock.schedule_once(remove_alert, 2)
 
     def go_back(self, instance):
         self.manager.current = "start"
