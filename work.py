@@ -11,7 +11,9 @@ from kivy.animation import Animation
 from kivy.uix.progressbar import ProgressBar
 from kivy.uix.floatlayout import FloatLayout
 from kivy.properties import NumericProperty
-from random import randint
+from kivy.uix.gridlayout import GridLayout
+from kivy.uix.popup import Popup
+from random import randint, shuffle
 import random
 
 
@@ -154,8 +156,8 @@ class GameScreen(Screen):
             item_box.add_widget(item_image)
             item_box.add_widget(item_label)
             self.items_layout_with_images.add_widget(item_box)
-            self.item_labels[item] = item_label  # อัปเดต Label
-            self.item_widgets[item] = item_box  # เก็บ Widget สำหรับการอัปเดต
+            self.item_labels[item] = item_label
+            self.item_widgets[item] = item_box
 
         layout.add_widget(self.items_layout_with_images)
 
@@ -164,14 +166,14 @@ class GameScreen(Screen):
         self.gold_image = Image(
             source="gold.jpeg",
             size_hint=(None, None),
-            size=(40, 40),
+            size=(230, 40),
         )
         self.gold_label = Label(
             text="Gold: 10",  # เริ่มต้นที่ 10 ทอง
-            font_size=12,
+            font_size=20,
             color=(1, 1, 1, 1),
             size_hint=(None, None),
-            size=(100, 40),
+            size=(130, 40),
             halign="center",
             valign="middle",
         )
@@ -313,9 +315,9 @@ class ShopScreen(Screen):
         # ปุ่มกลับไปหน้าหลัก
         back_button = Button(
             text="Back",
-            font_size=30,
-            size_hint=(0.1, 0.095),
-            pos_hint={"center_x": 0.95},
+            font_size=20,
+            size_hint=(0.5, 0.2),
+            pos_hint={"center_x": 0.5},
         )
         back_button.bind(on_press=self.go_back)
         layout.add_widget(back_button)
@@ -323,61 +325,168 @@ class ShopScreen(Screen):
         self.add_widget(layout)
 
     def buy_item(self, instance):
-        # ดึงชื่อสินค้าและราคาจากปุ่ม
-        item_info = instance.text.split(" - ")
-        item_name = item_info[0]
-        item_price = int(item_info[1].split(" ")[0])
+        item_name = instance.text.split()[0]  # แยกชื่อไอเท็มจากข้อความปุ่ม
+        item_price = self.item_prices[item_name]
+        current_gold = int(self.manager.get_screen("game").gold_label.text.split()[1])
 
-        # ดึงหน้าจอเกม
-        game_screen = self.manager.get_screen("game")
+        if current_gold >= item_price:
+            # หักเหรียญทองและอัปเดตจำนวนสินค้า
+            current_gold -= item_price
+            self.manager.get_screen("game").gold_label.text = f"Gold: {current_gold}"
 
-        # ตรวจสอบว่ามีทองคำเพียงพอหรือไม่
-        current_gold = int(game_screen.gold_label.text.split(": ")[1])
-        if current_gold >= item_price:  # ถ้ามีทองคำเพียงพอ
-            # อัปเดตจำนวนสินค้า
-            game_screen.items_count[item_name] += 1
-            game_screen.item_labels[item_name].text = (
-                f"{item_name}: {game_screen.items_count[item_name]}"
+            # เพิ่มจำนวนสินค้าใน GameScreen
+            self.manager.get_screen("game").items_count[item_name] += 1
+            self.manager.get_screen("game").item_labels[
+                item_name
+            ].text = (
+                f"{item_name}: {self.manager.get_screen('game').items_count[item_name]}"
             )
-            # หักทองคำ
-            game_screen.gold_label.text = f"Gold: {current_gold - item_price}"
-        else:
-            # แสดงข้อความแจ้งเตือน
-            self.show_alert(f"Not enough gold! {item_name} costs {item_price} Gold.")
-
-    def show_alert(self, message):
-        # ฟังก์ชันสำหรับแสดงข้อความแจ้งเตือน
-        alert = Label(
-            text=message,
-            font_size=20,
-            color=(1, 0, 0, 1),  # Red color for alert message
-            size_hint=(None, None),
-            size=(300, 50),
-            pos_hint={"center_x": 0.5, "center_y": 0.1},
-        )
-        self.add_widget(alert)
-
-        # Remove the alert after a short period
-        Clock.schedule_once(lambda dt: self.remove_alert(alert), 2)
-
-    def remove_alert(self, alert):
-        # Remove the alert label from the screen
-        self.remove_widget(alert)
 
     def go_back(self, instance):
         self.manager.current = "start"
 
 
-# สร้างแอปหลัก
+# สร้างหน้าจอ Mini Game
+class CollectGameScreen(Screen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        # สร้าง FloatLayout เป็น layout หลัก
+        main_layout = FloatLayout()
+
+        # เพิ่มรูปพื้นหลัง
+        background = Image(source="bk2.jpeg", allow_stretch=True, keep_ratio=False)
+        main_layout.add_widget(background)
+
+        # สร้างตัวแปรสำหรับเกมจับคู่
+        self.cards = [1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6]
+        shuffle(self.cards)
+        self.selected = []
+        self.buttons = []
+        self.matches_found = 0
+        self.gold = 0
+
+        # สร้าง GridLayout สำหรับการ์ด
+        self.game_layout = GridLayout(
+            cols=4,
+            spacing=5,
+            padding=10,
+            size_hint=(0.8, 0.8),
+            pos_hint={"center_x": 0.5, "center_y": 0.5},
+        )
+
+        # สร้างปุ่มการ์ด
+        for i in range(12):
+            button = Button(
+                text="",
+                font_size=24,
+                background_normal="",
+                background_color=(0.7, 0.7, 0.7, 1),
+            )
+            button.card_value = self.cards[i]
+            button.bind(on_press=self.reveal_card)
+            self.buttons.append(button)
+            self.game_layout.add_widget(button)
+
+        # สร้าง layout สำหรับแสดงทอง
+        gold_layout = BoxLayout(
+            orientation="horizontal",
+            size_hint=(None, None),
+            size=(150, 50),
+            pos_hint={"top": 0.95, "right": 0.95},
+        )
+
+        self.gold_image = Image(
+            source="gold.jpeg", size_hint=(None, None), size=(50, 50)
+        )
+        self.gold_label = Label(text=f": {self.gold}", font_size=24, color=(1, 1, 1, 1))
+        gold_layout.add_widget(self.gold_image)
+        gold_layout.add_widget(self.gold_label)
+
+        # ปุ่มกลับ
+        back_button = Button(
+            text="Back",
+            size_hint=(None, None),
+            size=(50, 50),
+            pos_hint={"top": 0.95, "x": 0.05},
+        )
+        back_button.bind(on_press=self.go_back)
+
+        # เพิ่ม widgets ทั้งหมดลงใน main_layout
+        main_layout.add_widget(self.game_layout)
+        main_layout.add_widget(gold_layout)
+        main_layout.add_widget(back_button)
+
+        self.add_widget(main_layout)
+
+    def reveal_card(self, button):
+        if button.text == "" and len(self.selected) < 2:
+            button.text = str(button.card_value)
+            button.background_color = (1, 1, 1, 1)
+            self.selected.append(button)
+
+            if len(self.selected) == 2:
+                Clock.schedule_once(self.check_match, 0.5)
+
+    def check_match(self, dt):
+        button1, button2 = self.selected
+
+        if button1.card_value == button2.card_value:
+            self.matches_found += 1
+            self.gold += 10
+            self.gold_label.text = f": {self.gold}"
+            self.selected = []
+
+            if self.matches_found == 6:
+                # เมื่อชนะเกม ให้อัพเดทจำนวนทองในหน้า GameScreen
+                game_screen = self.manager.get_screen("game")
+                current_gold = int(game_screen.gold_label.text.split()[1])
+                game_screen.gold_label.text = f"Gold: {current_gold + self.gold}"
+                self.show_winner_popup()
+        else:
+            Clock.schedule_once(self.reset_cards, 0.5)
+
+    def reset_cards(self, dt):
+        for button in self.selected:
+            button.text = ""
+            button.background_color = (0.7, 0.7, 0.7, 1)
+        self.selected = []
+
+    def show_winner_popup(self):
+        popup = Popup(
+            title="Congratulations!",
+            content=Label(text=f"You won!\nYou got {self.gold} gold!"),
+            size_hint=(0.6, 0.4),
+        )
+        popup.bind(on_dismiss=self.reset_game)
+        popup.open()
+
+    def reset_game(self, instance=None):
+        # รีเซ็ตเกมเมื่อเล่นจบ
+        self.matches_found = 0
+        self.gold = 0
+        self.gold_label.text = f": {self.gold}"
+        self.selected = []
+        shuffle(self.cards)
+
+        for i, button in enumerate(self.buttons):
+            button.text = ""
+            button.card_value = self.cards[i]
+            button.background_color = (0.7, 0.7, 0.7, 1)
+
+    def go_back(self, instance):
+        self.reset_game()
+        self.manager.current = "start"
+
+
+# สร้าง ScreenManager
 class GameApp(App):
     def build(self):
-        # สร้างหน้าจอหลัก
         sm = ScreenManager()
-
         sm.add_widget(StartScreen(name="start"))
         sm.add_widget(GameScreen(name="game"))
         sm.add_widget(ShopScreen(name="shop"))
-
+        sm.add_widget(CollectGameScreen(name="collect"))
         return sm
 
 
