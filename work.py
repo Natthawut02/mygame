@@ -15,6 +15,7 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.popup import Popup
 from kivy.uix.behaviors import DragBehavior
 from kivy.core.window import Window
+from kivy.core.audio import SoundLoader
 from random import randint, shuffle
 import random
 
@@ -75,6 +76,13 @@ class DraggableItem(DragBehavior, Image):
 class StartScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        # Load background music
+        self.background_music = SoundLoader.load("saw.mp3")
+        if self.background_music:
+            self.background_music.loop = True
+            self.background_music.volume = 0.5
+            self.background_music.play()
+
         background = Image(source="bk1.jpeg", allow_stretch=True, keep_ratio=False)
         self.add_widget(background)
 
@@ -86,6 +94,37 @@ class StartScreen(Screen):
             color=(0, 0, 0, 1),
         )
         layout.add_widget(welcome_label)
+
+        # Add sound control buttons
+        sound_controls = BoxLayout(
+            orientation="horizontal",
+            size_hint=(0.5, 0.1),
+            spacing=10,
+            pos_hint={"center_x": 0.5},
+        )
+
+        self.mute_button = Button(
+            text="Mute",
+            font_size=20,
+        )
+        self.mute_button.bind(on_press=self.toggle_mute)
+        sound_controls.add_widget(self.mute_button)
+
+        volume_up = Button(
+            text="Volume +",
+            font_size=20,
+        )
+        volume_up.bind(on_press=self.volume_up)
+        sound_controls.add_widget(volume_up)
+
+        volume_down = Button(
+            text="Volume -",
+            font_size=20,
+        )
+        volume_down.bind(on_press=self.volume_down)
+        sound_controls.add_widget(volume_down)
+
+        layout.add_widget(sound_controls)
 
         start_button = Button(
             text="Start Game",
@@ -116,6 +155,23 @@ class StartScreen(Screen):
 
         self.add_widget(layout)
 
+    def toggle_mute(self, instance):
+        if self.background_music:
+            if self.background_music.volume > 0:
+                self.background_music.volume = 0
+                self.mute_button.text = "Unmute"
+            else:
+                self.background_music.volume = 0.5
+                self.mute_button.text = "Mute"
+
+    def volume_up(self, instance):
+        if self.background_music and self.background_music.volume < 1.0:
+            self.background_music.volume = min(1.0, self.background_music.volume + 0.1)
+
+    def volume_down(self, instance):
+        if self.background_music and self.background_music.volume > 0:
+            self.background_music.volume = max(0, self.background_music.volume - 0.1)
+
     def start_game(self, instance):
         self.manager.current = "game"
 
@@ -124,6 +180,16 @@ class StartScreen(Screen):
 
     def open_collect_game(self, instance):
         self.manager.current = "collect"
+
+    def on_leave(self):
+        # Pause the music when leaving the start screen
+        if self.background_music:
+            self.background_music.stop()
+
+    def on_enter(self):
+        # Resume the music when returning to the start screen
+        if self.background_music and not self.background_music.state == "play":
+            self.background_music.play()
 
 
 class GameScreen(Screen):
