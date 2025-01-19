@@ -20,63 +20,74 @@ from random import randint, shuffle
 import random
 
 
-class DraggableItem(DragBehavior, Image):
-    def __init__(self, main_screen, item_type, **kwargs):
+class SettingsPopup(Popup):
+    def __init__(self, start_screen, **kwargs):
         super().__init__(**kwargs)
-        self.main_screen = main_screen
-        self.item_type = item_type
-        self.size_hint = (None, None)
-        self.size = (50, 50)
-        self.drag_rectangle = [0, 0, Window.width, Window.height]
-        self.drag_timeout = 10000000
-        self.drag_distance = 0
-        self.original_pos = self.pos
+        self.start_screen = start_screen
+        self.title = "Settings"
+        self.size_hint = (0.6, 0.4)
 
-    def on_touch_up(self, touch):
-        if touch.grab_current is self:
-            # เช็คว่าปล่อยไอเทมใกล้มอนสเตอร์หรือไม่
-            monster_widget = self.main_screen.monster_image
-            monster_x = monster_widget.x
-            monster_y = monster_widget.y
-            monster_right = monster_x + monster_widget.width
-            monster_top = monster_y + monster_widget.height
+        layout = BoxLayout(orientation="vertical", spacing=10, padding=20)
+        sound_controls = BoxLayout(orientation="vertical", spacing=10)
 
-            if (
-                monster_x <= self.x <= monster_right
-                and monster_y <= self.y <= monster_top
-            ):
-                # เพิ่มค่าในหลอดตามประเภทไอเทม
-                if (
-                    self.item_type == "Food"
-                    and self.main_screen.items_count["Food"] > 0
-                ):
-                    self.main_screen.food_bar.value = min(
-                        100, self.main_screen.food_bar.value + 20
-                    )
-                    self.main_screen.items_count["Food"] -= 1
-                elif (
-                    self.item_type == "Water"
-                    and self.main_screen.items_count["Water"] > 0
-                ):
-                    self.main_screen.water_bar.value = min(
-                        100, self.main_screen.water_bar.value + 20
-                    )
-                    self.main_screen.items_count["Water"] -= 1
+        self.mute_button = Button(
+            text="Mute" if start_screen.background_music.volume > 0 else "Unmute",
+            size_hint=(1, 0.3),
+        )
+        self.mute_button.bind(on_press=self.toggle_mute)
 
-                # อัพเดทจำนวนไอเทมที่แสดง
-                self.main_screen.item_labels[self.item_type].text = (
-                    f"{self.item_type}: {self.main_screen.items_count[self.item_type]}"
-                )
+        volume_controls = BoxLayout(orientation="horizontal", spacing=10)
+        volume_down = Button(text="Volume -", size_hint=(0.5, 1))
+        volume_down.bind(on_press=self.volume_down)
+        volume_up = Button(text="Volume +", size_hint=(0.5, 1))
+        volume_up.bind(on_press=self.volume_up)
 
-            # คืนตำแหน่งไอเทมกลับที่เดิม
-            Animation(pos=self.original_pos, duration=0.1).start(self)
-        return super().on_touch_up(touch)
+        volume_controls.add_widget(volume_down)
+        volume_controls.add_widget(volume_up)
+
+        sound_controls.add_widget(Label(text="Sound Settings", size_hint=(1, 0.3)))
+        sound_controls.add_widget(self.mute_button)
+        sound_controls.add_widget(volume_controls)
+
+        layout.add_widget(sound_controls)
+
+        close_button = Button(text="Close", size_hint=(1, 0.3))
+        close_button.bind(on_press=self.dismiss)
+        layout.add_widget(close_button)
+
+        self.content = layout
+
+    def toggle_mute(self, instance):
+        if self.start_screen.background_music:
+            if self.start_screen.background_music.volume > 0:
+                self.start_screen.background_music.volume = 0
+                self.mute_button.text = "Unmute"
+            else:
+                self.start_screen.background_music.volume = 0.5
+                self.mute_button.text = "Mute"
+
+    def volume_up(self, instance):
+        if (
+            self.start_screen.background_music
+            and self.start_screen.background_music.volume < 1.0
+        ):
+            self.start_screen.background_music.volume = min(
+                1.0, self.start_screen.background_music.volume + 0.1
+            )
+
+    def volume_down(self, instance):
+        if (
+            self.start_screen.background_music
+            and self.start_screen.background_music.volume > 0
+        ):
+            self.start_screen.background_music.volume = max(
+                0, self.start_screen.background_music.volume - 0.1
+            )
 
 
 class StartScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        # Load background music
         self.background_music = SoundLoader.load("saw.mp3")
         if self.background_music:
             self.background_music.loop = True
@@ -86,6 +97,16 @@ class StartScreen(Screen):
         background = Image(source="bk1.jpeg", allow_stretch=True, keep_ratio=False)
         self.add_widget(background)
 
+        settings_layout = AnchorLayout(anchor_x="right", anchor_y="top", padding=10)
+        settings_button = Button(
+            background_normal="setting.jpeg",
+            size_hint=(None, None),
+            size=(80, 80),
+        )
+        settings_button.bind(on_press=self.open_settings)
+        settings_layout.add_widget(settings_button)
+        self.add_widget(settings_layout)
+
         layout = BoxLayout(orientation="vertical", spacing=10, padding=20)
 
         welcome_label = Label(
@@ -94,37 +115,6 @@ class StartScreen(Screen):
             color=(0, 0, 0, 1),
         )
         layout.add_widget(welcome_label)
-
-        # Add sound control buttons
-        sound_controls = BoxLayout(
-            orientation="horizontal",
-            size_hint=(0.5, 0.1),
-            spacing=10,
-            pos_hint={"center_x": 0.5},
-        )
-
-        self.mute_button = Button(
-            text="Mute",
-            font_size=20,
-        )
-        self.mute_button.bind(on_press=self.toggle_mute)
-        sound_controls.add_widget(self.mute_button)
-
-        volume_up = Button(
-            text="Volume +",
-            font_size=20,
-        )
-        volume_up.bind(on_press=self.volume_up)
-        sound_controls.add_widget(volume_up)
-
-        volume_down = Button(
-            text="Volume -",
-            font_size=20,
-        )
-        volume_down.bind(on_press=self.volume_down)
-        sound_controls.add_widget(volume_down)
-
-        layout.add_widget(sound_controls)
 
         start_button = Button(
             text="Start Game",
@@ -155,22 +145,9 @@ class StartScreen(Screen):
 
         self.add_widget(layout)
 
-    def toggle_mute(self, instance):
-        if self.background_music:
-            if self.background_music.volume > 0:
-                self.background_music.volume = 0
-                self.mute_button.text = "Unmute"
-            else:
-                self.background_music.volume = 0.5
-                self.mute_button.text = "Mute"
-
-    def volume_up(self, instance):
-        if self.background_music and self.background_music.volume < 1.0:
-            self.background_music.volume = min(1.0, self.background_music.volume + 0.1)
-
-    def volume_down(self, instance):
-        if self.background_music and self.background_music.volume > 0:
-            self.background_music.volume = max(0, self.background_music.volume - 0.1)
+    def open_settings(self, instance):
+        settings_popup = SettingsPopup(self)
+        settings_popup.open()
 
     def start_game(self, instance):
         self.manager.current = "game"
@@ -182,14 +159,61 @@ class StartScreen(Screen):
         self.manager.current = "collect"
 
     def on_leave(self):
-        # Pause the music when leaving the start screen
         if self.background_music:
             self.background_music.stop()
 
     def on_enter(self):
-        # Resume the music when returning to the start screen
         if self.background_music and not self.background_music.state == "play":
             self.background_music.play()
+
+
+class DraggableItem(DragBehavior, Image):
+    def __init__(self, main_screen, item_type, **kwargs):
+        super().__init__(**kwargs)
+        self.main_screen = main_screen
+        self.item_type = item_type
+        self.size_hint = (None, None)
+        self.size = (50, 50)
+        self.drag_rectangle = [0, 0, Window.width, Window.height]
+        self.drag_timeout = 10000000
+        self.drag_distance = 0
+        self.original_pos = self.pos
+
+    def on_touch_up(self, touch):
+        if touch.grab_current is self:
+            monster_widget = self.main_screen.monster_image
+            monster_x = monster_widget.x
+            monster_y = monster_widget.y
+            monster_right = monster_x + monster_widget.width
+            monster_top = monster_y + monster_widget.height
+
+            if (
+                monster_x <= self.x <= monster_right
+                and monster_y <= self.y <= monster_top
+            ):
+                if (
+                    self.item_type == "Food"
+                    and self.main_screen.items_count["Food"] > 0
+                ):
+                    self.main_screen.food_bar.value = min(
+                        100, self.main_screen.food_bar.value + 20
+                    )
+                    self.main_screen.items_count["Food"] -= 1
+                elif (
+                    self.item_type == "Water"
+                    and self.main_screen.items_count["Water"] > 0
+                ):
+                    self.main_screen.water_bar.value = min(
+                        100, self.main_screen.water_bar.value + 20
+                    )
+                    self.main_screen.items_count["Water"] -= 1
+
+                self.main_screen.item_labels[self.item_type].text = (
+                    f"{self.item_type}: {self.main_screen.items_count[self.item_type]}"
+                )
+
+            Animation(pos=self.original_pos, duration=0.1).start(self)
+        return super().on_touch_up(touch)
 
 
 class GameScreen(Screen):
@@ -443,7 +467,6 @@ class CollectGameScreen(Screen):
         self.matches_found = 0
         self.gold = 0
 
-        # สร้าง GridLayout สำหรับการ์ด
         self.game_layout = GridLayout(
             cols=4,
             spacing=5,
@@ -452,7 +475,6 @@ class CollectGameScreen(Screen):
             pos_hint={"center_x": 0.5, "center_y": 0.5},
         )
 
-        # สร้างปุ่มการ์ด
         for i in range(12):
             button = Button(
                 text="",
@@ -465,7 +487,6 @@ class CollectGameScreen(Screen):
             self.buttons.append(button)
             self.game_layout.add_widget(button)
 
-        # สร้าง layout สำหรับแสดงทอง
         gold_layout = BoxLayout(
             orientation="horizontal",
             size_hint=(None, None),
@@ -480,7 +501,6 @@ class CollectGameScreen(Screen):
         gold_layout.add_widget(self.gold_image)
         gold_layout.add_widget(self.gold_label)
 
-        # ปุ่มกลับ
         back_button = Button(
             text="Back",
             size_hint=(None, None),
@@ -489,7 +509,6 @@ class CollectGameScreen(Screen):
         )
         back_button.bind(on_press=self.go_back)
 
-        # เพิ่ม widgets ทั้งหมดลงใน main_layout
         main_layout.add_widget(self.game_layout)
         main_layout.add_widget(gold_layout)
         main_layout.add_widget(back_button)
@@ -515,7 +534,6 @@ class CollectGameScreen(Screen):
             self.selected = []
 
             if self.matches_found == 6:
-                # เมื่อชนะเกม ให้อัพเดทจำนวนทองในหน้า GameScreen
                 game_screen = self.manager.get_screen("game")
                 current_gold = int(game_screen.gold_label.text.split()[1])
                 game_screen.gold_label.text = f"Gold: {current_gold + self.gold}"
@@ -539,7 +557,6 @@ class CollectGameScreen(Screen):
         popup.open()
 
     def reset_game(self, instance=None):
-        # รีเซ็ตเกมเมื่อเล่นจบ
         self.matches_found = 0
         self.gold = 0
         self.gold_label.text = f": {self.gold}"
@@ -556,7 +573,6 @@ class CollectGameScreen(Screen):
         self.manager.current = "start"
 
 
-# สร้าง ScreenManager
 class GameApp(App):
     def build(self):
         sm = ScreenManager()
