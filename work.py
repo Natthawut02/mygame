@@ -318,6 +318,20 @@ class GameScreen(Screen):
         self.gold_layout.add_widget(self.gold_label)
         layout.add_widget(self.gold_layout)
 
+        # Add health bar
+        self.health_bar = ProgressBar(
+            max=100,
+            value=100,
+            size_hint=(0.5, 0.05),
+            pos_hint={"x": 0.300, "y": 0.800},
+        )
+        layout.add_widget(
+            Label(
+                text="Health:", size_hint=(0.2, 0.05), pos_hint={"x": 0.165, "y": 0.805}
+            )
+        )
+        layout.add_widget(self.health_bar)
+
         self.food_bar = ProgressBar(
             max=100,
             value=80,
@@ -344,12 +358,14 @@ class GameScreen(Screen):
         )
         layout.add_widget(self.water_bar)
 
-        Clock.schedule_interval(self.decrease_values, 2)
-
         layout.add_widget(anchor_layout_temp)
         layout.add_widget(anchor_layout)
 
         self.add_widget(layout)
+
+        # Schedule both the original decrease_values and the new check_health
+        Clock.schedule_interval(self.decrease_values, 2)
+        Clock.schedule_interval(self.check_health, 1)
 
         self.update_temperature(0)
         self.update_monster()
@@ -357,6 +373,51 @@ class GameScreen(Screen):
         Clock.schedule_interval(self.update_monster, 30)
 
         self.animate_monster()
+
+    def check_health(self, dt):
+        # Decrease health if either food or water is at 0
+        if self.food_bar.value <= 0 or self.water_bar.value <= 0:
+            if self.health_bar.value > 0:
+                self.health_bar.value = max(0, self.health_bar.value - 0.5)
+                self.monster_image.opacity = max(0.3, self.health_bar.value / 100)
+
+                # Show game over popup if health reaches 0
+                if self.health_bar.value <= 0:
+                    self.show_game_over()
+        elif self.health_bar.value < 100:
+            # Slowly regenerate health if both food and water are above 0
+            self.health_bar.value = min(100, self.health_bar.value + 0.2)
+            self.monster_image.opacity = max(0.3, self.health_bar.value / 100)
+
+    def show_game_over(self):
+        content = BoxLayout(orientation="vertical", padding=10)
+        content.add_widget(Label(text="Game Over!\nYour monster has died."))
+
+        restart_button = Button(text="Restart", size_hint=(1, 0.3))
+        restart_button.bind(on_press=self.restart_game)
+        content.add_widget(restart_button)
+
+        popup = Popup(
+            title="Game Over", content=content, size_hint=(0.6, 0.4), auto_dismiss=False
+        )
+        popup.open()
+
+    def restart_game(self, instance):
+        # Reset all values
+        self.health_bar.value = 100
+        self.food_bar.value = 80
+        self.water_bar.value = 70
+        self.monster_image.opacity = 1
+        self.items_count = {"Food": 5, "Water": 5, "heater": 0, "Toy": 0}
+
+        # Update item labels
+        for item, count in self.items_count.items():
+            self.item_labels[item].text = f"{item}: {count}"
+
+        # Close all popups
+        for child in Window.children[:]:
+            if isinstance(child, Popup):
+                child.dismiss()
 
     def animate_monster(self):
         animation = Animation(
