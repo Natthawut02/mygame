@@ -110,16 +110,25 @@ class StartScreen(Screen):
         layout = BoxLayout(orientation="vertical", spacing=10, padding=20)
 
         welcome_label = Label(
-            text="Welcome to the Game!",
+            text="",
             font_size=60,
             color=(0, 0, 0, 1),
         )
         layout.add_widget(welcome_label)
+        layout = BoxLayout(orientation="vertical")
 
+        # เพิ่มรูปภาพ
+        img = Image(
+            source="wk.jpeg",  # ใส่ชื่อไฟล์ภาพของคุณ
+            size_hint=(0.3, 0.3),  # กำหนดขนาดภาพ
+            pos_hint={"center_x": 0.5, "center_y": 10},
+        )  # จัดตำแหน่งให้อยู่ตรงกลาง
+
+        layout.add_widget(img)
         start_button = Button(
             text="Start Game",
             font_size=20,
-            size_hint=(0.5, 0.2),
+            size_hint=(0.5, 0.05),
             pos_hint={"center_x": 0.5},
         )
         start_button.bind(on_press=self.start_game)
@@ -128,7 +137,7 @@ class StartScreen(Screen):
         shop_button = Button(
             text="Shop",
             font_size=20,
-            size_hint=(0.5, 0.2),
+            size_hint=(0.5, 0.05),
             pos_hint={"center_x": 0.5},
         )
         shop_button.bind(on_press=self.open_shop)
@@ -137,7 +146,7 @@ class StartScreen(Screen):
         collect_button = Button(
             text="MiNi Game",
             font_size=20,
-            size_hint=(0.5, 0.2),
+            size_hint=(0.5, 0.05),
             pos_hint={"center_x": 0.5},
         )
         collect_button.bind(on_press=self.open_collect_game)
@@ -327,7 +336,7 @@ class GameScreen(Screen):
         )
         layout.add_widget(
             Label(
-                text="Health:", size_hint=(0.2, 0.05), pos_hint={"x": 0.165, "y": 0.805}
+                text="Health:", size_hint=(0.2, 0.05), pos_hint={"x": 0.165, "y": 0.8}
             )
         )
         layout.add_widget(self.health_bar)
