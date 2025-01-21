@@ -117,12 +117,11 @@ class StartScreen(Screen):
         layout.add_widget(welcome_label)
         layout = BoxLayout(orientation="vertical")
 
-        # เพิ่มรูปภาพ
         img = Image(
-            source="wk.jpeg",  # ใส่ชื่อไฟล์ภาพของคุณ
-            size_hint=(0.3, 0.3),  # กำหนดขนาดภาพ
+            source="wk.jpeg",
+            size_hint=(0.3, 0.3),
             pos_hint={"center_x": 0.5, "center_y": 10},
-        )  # จัดตำแหน่งให้อยู่ตรงกลาง
+        )
 
         layout.add_widget(img)
         start_button = Button(
@@ -235,7 +234,7 @@ class GameScreen(Screen):
 
         anchor_layout_temp = AnchorLayout(anchor_x="left", anchor_y="top", padding=10)
         self.temp_label = Label(
-            text="Temperature: -- °C",
+            text="°C",
             font_size=15,
             color=(1, 1, 1, 1),
             size_hint=(None, None),
@@ -327,7 +326,6 @@ class GameScreen(Screen):
         self.gold_layout.add_widget(self.gold_label)
         layout.add_widget(self.gold_layout)
 
-        # Add health bar
         self.health_bar = ProgressBar(
             max=100,
             value=100,
@@ -372,7 +370,6 @@ class GameScreen(Screen):
 
         self.add_widget(layout)
 
-        # Schedule both the original decrease_values and the new check_health
         Clock.schedule_interval(self.decrease_values, 2)
         Clock.schedule_interval(self.check_health, 1)
 
@@ -384,17 +381,14 @@ class GameScreen(Screen):
         self.animate_monster()
 
     def check_health(self, dt):
-        # Decrease health if either food or water is at 0
         if self.food_bar.value <= 0 or self.water_bar.value <= 0:
             if self.health_bar.value > 0:
                 self.health_bar.value = max(0, self.health_bar.value - 0.5)
                 self.monster_image.opacity = max(0.3, self.health_bar.value / 100)
 
-                # Show game over popup if health reaches 0
                 if self.health_bar.value <= 0:
                     self.show_game_over()
         elif self.health_bar.value < 100:
-            # Slowly regenerate health if both food and water are above 0
             self.health_bar.value = min(100, self.health_bar.value + 0.2)
             self.monster_image.opacity = max(0.3, self.health_bar.value / 100)
 
@@ -412,18 +406,15 @@ class GameScreen(Screen):
         popup.open()
 
     def restart_game(self, instance):
-        # Reset all values
         self.health_bar.value = 100
         self.food_bar.value = 80
         self.water_bar.value = 70
         self.monster_image.opacity = 1
         self.items_count = {"Food": 5, "Water": 5, "heater": 0, "Toy": 0}
 
-        # Update item labels
         for item, count in self.items_count.items():
             self.item_labels[item].text = f"{item}: {count}"
 
-        # Close all popups
         for child in Window.children[:]:
             if isinstance(child, Popup):
                 child.dismiss()
@@ -465,6 +456,38 @@ class ShopScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+        # Initialize background music
+        self.shop_music = SoundLoader.load("shop.mp3")
+        if self.shop_music:
+            self.shop_music.loop = True
+            self.shop_music.volume = 0.5
+
+        # Create main layout
+        main_layout = FloatLayout()
+
+        # Add background image
+        background = Image(
+            source="shop_background.jpeg", allow_stretch=True, keep_ratio=False
+        )
+        main_layout.add_widget(background)
+
+        # Create layout for shop content
+        content_layout = BoxLayout(
+            orientation="vertical",
+            spacing=10,
+            padding=20,
+            size_hint=(0.8, 0.9),
+            pos_hint={"center_x": 0.5, "center_y": 0.5},
+        )
+
+        shop_label = Label(
+            text="Welcome to the Shop!",
+            font_size=40,
+            color=(1, 1, 1, 1),
+        )
+        content_layout.add_widget(shop_label)
+
+        # Item prices dictionary
         self.item_prices = {
             "Food": 25,
             "Water": 10,
@@ -472,38 +495,70 @@ class ShopScreen(Screen):
             "Toy": 30,
         }
 
-        layout = BoxLayout(orientation="vertical", spacing=10, padding=20)
-
-        shop_label = Label(
-            text="Welcome to the Shop!",
-            font_size=40,
-            color=(1, 1, 1, 1),
-        )
-        layout.add_widget(shop_label)
-
+        # Create buttons for each item
         for item, price in self.item_prices.items():
-            item_button = Button(
-                text=f"{item}          -   {price} Gold",
-                font_size=20,
-                size_hint=(0.5, 0.2),
+            item_layout = BoxLayout(
+                orientation="horizontal",
+                size_hint=(0.8, 0.15),
+                spacing=10,
                 pos_hint={"center_x": 0.5},
             )
-            item_button.bind(on_press=self.buy_item)
-            layout.add_widget(item_button)
 
+            # Add item image
+            item_image = Image(
+                source=f"{item.lower()}.jpeg", size_hint=(None, None), size=(60, 60)
+            )
+            item_layout.add_widget(item_image)
+
+            # Add item button
+            item_button = Button(
+                text=f"{item} - {price} Gold",
+                font_size=20,
+                background_normal="",
+                background_color=(0.7, 0.7, 0.7, 0.8),
+            )
+            item_button.bind(on_press=self.buy_item)
+            item_layout.add_widget(item_button)
+
+            content_layout.add_widget(item_layout)
+
+        # Add back button
         back_button = Button(
             text="Back",
             font_size=20,
-            size_hint=(0.5, 0.2),
+            size_hint=(0.3, 0.1),
             pos_hint={"center_x": 0.5},
+            background_normal="",
+            background_color=(0.7, 0.3, 0.3, 1),
         )
         back_button.bind(on_press=self.go_back)
-        layout.add_widget(back_button)
+        content_layout.add_widget(back_button)
 
-        self.add_widget(layout)
+        main_layout.add_widget(content_layout)
+        self.add_widget(main_layout)
+
+    def on_enter(self):
+        # Play shop music when entering the screen
+        if self.shop_music and not self.shop_music.state == "play":
+            self.shop_music.play()
+
+        # Stop the background music from start screen
+        start_screen = self.manager.get_screen("start")
+        if start_screen.background_music:
+            start_screen.background_music.stop()
+
+    def on_leave(self):
+        # Stop shop music when leaving the screen
+        if self.shop_music:
+            self.shop_music.stop()
+
+        # Resume the background music from start screen
+        start_screen = self.manager.get_screen("start")
+        if start_screen.background_music:
+            start_screen.background_music.play()
 
     def buy_item(self, instance):
-        item_name = instance.text.split()[0]
+        item_name = instance.text.split("-")[0].strip()
         item_price = self.item_prices[item_name]
         current_gold = int(self.manager.get_screen("game").gold_label.text.split()[1])
 
@@ -516,6 +571,19 @@ class ShopScreen(Screen):
             ].text = (
                 f"{item_name}: {self.manager.get_screen('game').items_count[item_name]}"
             )
+
+            # Play purchase sound effect
+            purchase_sound = SoundLoader.load("purchase.mp3")
+            if purchase_sound:
+                purchase_sound.play()
+        else:
+            # Show insufficient funds popup
+            popup = Popup(
+                title="Insufficient Funds",
+                content=Label(text="Not enough gold!"),
+                size_hint=(0.6, 0.2),
+            )
+            popup.open()
 
     def go_back(self, instance):
         self.manager.current = "start"
