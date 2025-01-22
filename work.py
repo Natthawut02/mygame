@@ -16,6 +16,7 @@ from kivy.uix.popup import Popup
 from kivy.uix.behaviors import DragBehavior
 from kivy.core.window import Window
 from kivy.core.audio import SoundLoader
+from kivy.graphics import Color, Rectangle
 from random import randint, shuffle
 import random
 
@@ -134,7 +135,7 @@ class StartScreen(Screen):
         layout.add_widget(start_button)
 
         shop_button = Button(
-            text="Shop",
+            text="shop",
             font_size=20,
             size_hint=(0.5, 0.05),
             pos_hint={"center_x": 0.5},
@@ -455,81 +456,179 @@ class GameScreen(Screen):
 class ShopScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        # เพิ่มการตรวจสอบไฟล์เสียงร้านค้า
+        try:
+            self.shop_music = SoundLoader.load("shop.mp3")
+            if self.shop_music:
+                self.shop_music.loop = True
+                self.shop_music.volume = 0.5
+        except:
+            print("Warning: Could not load shop music")
+            self.shop_music = None
 
-        # Initialize background music
-        self.shop_music = SoundLoader.load("shop.mp3")
-        if self.shop_music:
-            self.shop_music.loop = True
-            self.shop_music.volume = 0.5
-
-        # Create main layout
         main_layout = FloatLayout()
 
-        # Add background image
         background = Image(
             source="shop_background.jpeg", allow_stretch=True, keep_ratio=False
         )
         main_layout.add_widget(background)
 
-        # Create layout for shop content
+        overlay = BoxLayout(
+            orientation="vertical",
+            size_hint=(1, 1),
+            pos_hint={"center_x": 0.5, "center_y": 0.5},
+        )
+        with overlay.canvas.before:
+            Color(0, 0, 0, 0.7)
+            Rectangle(pos=overlay.pos, size=overlay.size)
+        main_layout.add_widget(overlay)
+
         content_layout = BoxLayout(
             orientation="vertical",
-            spacing=10,
-            padding=20,
-            size_hint=(0.8, 0.9),
+            spacing=20,
+            padding=30,
+            size_hint=(0.9, 0.9),
             pos_hint={"center_x": 0.5, "center_y": 0.5},
         )
 
-        shop_label = Label(
-            text="Welcome to the Shop!",
-            font_size=40,
-            color=(1, 1, 1, 1),
+        header_layout = BoxLayout(
+            orientation="horizontal", size_hint=(1, 0.15), padding=[10, 5]
         )
-        content_layout.add_widget(shop_label)
+        with header_layout.canvas.before:
+            Color(0, 0, 0, 0.8)
+            Rectangle(pos=header_layout.pos, size=header_layout.size)
 
-        # Item prices dictionary
+        shop_label = Label(
+            text="JY HET BY DIE WINKEL AANGEKOM",
+            font_size=40,
+            color=(1, 0.8, 0.2, 1),
+            bold=True,
+            size_hint=(0.8, 1),
+            outline_width=2,
+            outline_color=(0, 0, 0, 1),
+        )
+
+        self.gold_display = BoxLayout(
+            orientation="horizontal",
+            size_hint=(0.2, 1),
+            padding=(5, 0),
+            spacing=5,
+        )
+
+        with self.gold_display.canvas.before:
+            Color(0, 0, 0, 0.6)
+            Rectangle(pos=self.gold_display.pos, size=self.gold_display.size)
+
+        gold_icon = Image(
+            source="gold.jpeg",
+            size_hint=(None, None),
+            size=(30, 30),
+            pos_hint={"center_y": 0.5},
+        )
+
+        self.gold_amount = Label(
+            text="0",
+            font_size=28,
+            color=(1, 0.8, 0.2, 1),
+            bold=True,
+            outline_width=1,
+            outline_color=(0, 0, 0, 1),
+            size_hint=(1, 1),
+            pos_hint={"center_y": 0.5},
+        )
+
+        self.gold_display.add_widget(gold_icon)
+        self.gold_display.add_widget(self.gold_amount)
+
+        header_layout.add_widget(shop_label)
+        header_layout.add_widget(self.gold_display)
+        content_layout.add_widget(header_layout)
+
         self.item_prices = {
-            "Food": 25,
-            "Water": 10,
-            "heater": 60,
-            "Toy": 30,
+            "Food": {"price": 25, "description": "Restores 20% hunger"},
+            "Water": {"price": 10, "description": "Restores 20% thirst"},
+            "heater": {"price": 60, "description": "Keeps your pet warm"},
+            "Toy": {"price": 30, "description": "Makes your pet happy"},
         }
 
-        # Create buttons for each item
-        for item, price in self.item_prices.items():
-            item_layout = BoxLayout(
-                orientation="horizontal",
-                size_hint=(0.8, 0.15),
-                spacing=10,
-                pos_hint={"center_x": 0.5},
+        items_grid = GridLayout(
+            cols=2, spacing=15, size_hint=(1, 0.7), padding=[10, 10]
+        )
+
+        for item, details in self.item_prices.items():
+            item_card = BoxLayout(orientation="vertical", spacing=5, padding=10)
+
+            with item_card.canvas.before:
+                Color(0.1, 0.1, 0.1, 0.9)
+                Rectangle(pos=item_card.pos, size=item_card.size)
+
+            image_container = BoxLayout(size_hint=(1, 0.6), padding=[2, 2])
+            with image_container.canvas.before:
+                Color(1, 1, 1, 0.8)
+                Rectangle(pos=image_container.pos, size=image_container.size)
+
+            item_image = Image(source=f"{item.lower()}.jpeg", size_hint=(1, 1))
+            image_container.add_widget(item_image)
+
+            item_name = Label(
+                text=item,
+                font_size=24,
+                color=(1, 1, 1, 1),
+                size_hint=(1, 0.15),
+                bold=True,
+                outline_width=1,
+                outline_color=(0, 0, 0, 1),
             )
 
-            # Add item image
-            item_image = Image(
-                source=f"{item.lower()}.jpeg", size_hint=(None, None), size=(60, 60)
-            )
-            item_layout.add_widget(item_image)
-
-            # Add item button
-            item_button = Button(
-                text=f"{item} - {price} Gold",
+            price_label = Label(
+                text=f"{details['price']} Gold",
                 font_size=20,
-                background_normal="",
-                background_color=(0.7, 0.7, 0.7, 0.8),
+                color=(1, 0.8, 0.2, 1),
+                size_hint=(1, 0.15),
+                bold=True,
+                outline_width=1,
+                outline_color=(0, 0, 0, 1),
             )
-            item_button.bind(on_press=self.buy_item)
-            item_layout.add_widget(item_button)
 
-            content_layout.add_widget(item_layout)
+            description_label = Label(
+                text=details["description"],
+                font_size=16,
+                color=(0.9, 0.9, 0.9, 1),
+                size_hint=(1, 0.15),
+                outline_width=1,
+                outline_color=(0, 0, 0, 1),
+            )
 
-        # Add back button
+            buy_button = Button(
+                text="BUY",
+                font_size=20,
+                size_hint=(0.8, 0.2),
+                pos_hint={"center_x": 0.5},
+                background_normal="",
+                background_color=(0.2, 0.6, 0.2, 1),
+                bold=True,
+            )
+            buy_button.item_name = item
+            buy_button.bind(on_press=self.buy_item)
+
+            item_card.add_widget(image_container)
+            item_card.add_widget(item_name)
+            item_card.add_widget(price_label)
+            item_card.add_widget(description_label)
+            item_card.add_widget(buy_button)
+
+            items_grid.add_widget(item_card)
+
+        content_layout.add_widget(items_grid)
+
         back_button = Button(
-            text="Back",
-            font_size=20,
+            text="BACK",
+            font_size=24,
             size_hint=(0.3, 0.1),
             pos_hint={"center_x": 0.5},
             background_normal="",
-            background_color=(0.7, 0.3, 0.3, 1),
+            background_color=(0.8, 0.2, 0.2, 1),
+            bold=True,
         )
         back_button.bind(on_press=self.go_back)
         content_layout.add_widget(back_button)
@@ -538,33 +637,39 @@ class ShopScreen(Screen):
         self.add_widget(main_layout)
 
     def on_enter(self):
-        # Play shop music when entering the screen
         if self.shop_music and not self.shop_music.state == "play":
-            self.shop_music.play()
+            try:
+                self.shop_music.play()
+            except:
+                print("Warning: Could not play shop music")
 
-        # Stop the background music from start screen
+        current_gold = int(self.manager.get_screen("game").gold_label.text.split()[1])
+        self.gold_amount.text = str(current_gold)
+
         start_screen = self.manager.get_screen("start")
         if start_screen.background_music:
             start_screen.background_music.stop()
 
     def on_leave(self):
-        # Stop shop music when leaving the screen
         if self.shop_music:
-            self.shop_music.stop()
+            try:
+                self.shop_music.stop()
+            except:
+                print("Warning: Could not stop shop music")
 
-        # Resume the background music from start screen
         start_screen = self.manager.get_screen("start")
         if start_screen.background_music:
             start_screen.background_music.play()
 
     def buy_item(self, instance):
-        item_name = instance.text.split("-")[0].strip()
-        item_price = self.item_prices[item_name]
+        item_name = instance.item_name
+        item_price = self.item_prices[item_name]["price"]
         current_gold = int(self.manager.get_screen("game").gold_label.text.split()[1])
 
         if current_gold >= item_price:
             current_gold -= item_price
             self.manager.get_screen("game").gold_label.text = f"Gold: {current_gold}"
+            self.gold_amount.text = str(current_gold)
             self.manager.get_screen("game").items_count[item_name] += 1
             self.manager.get_screen("game").item_labels[
                 item_name
@@ -572,16 +677,36 @@ class ShopScreen(Screen):
                 f"{item_name}: {self.manager.get_screen('game').items_count[item_name]}"
             )
 
-            # Play purchase sound effect
-            purchase_sound = SoundLoader.load("purchase.mp3")
-            if purchase_sound:
-                purchase_sound.play()
-        else:
-            # Show insufficient funds popup
+            # แสดง Popup เมื่อซื้อสำเร็จ
             popup = Popup(
-                title="Insufficient Funds",
-                content=Label(text="Not enough gold!"),
+                title="Purchase Successful!",
+                content=Label(
+                    text=f"You bought 1 {item_name}!", color=(0.2, 0.8, 0.2, 1)
+                ),
                 size_hint=(0.6, 0.2),
+                background_color=(0.9, 0.9, 0.9, 1),
+            )
+            popup.open()
+
+            # พยายามเล่นเสียงซื้อของ ถ้าไม่มีไฟล์ก็จะข้ามไป
+            try:
+                # ลองใช้เสียงตัวอื่นที่มีอยู่แล้วในเกม
+                purchase_sound = SoundLoader.load("shop.mp3")  # ใช้เสียงร้านค้าแทน
+                if purchase_sound:
+                    purchase_sound.volume = 0.3  # ลดเสียงลงเพื่อไม่ให้ดังเกินไป
+                    purchase_sound.play()
+            except:
+                print("Warning: Could not play purchase sound")
+        else:
+            needed_gold = item_price - current_gold
+            popup = Popup(
+                title="Cannot Purchase",
+                content=Label(
+                    text=f"Not enough gold!\nYou need {needed_gold} more gold.",
+                    color=(0.8, 0.2, 0.2, 1),
+                ),
+                size_hint=(0.6, 0.2),
+                background_color=(0.9, 0.9, 0.9, 1),
             )
             popup.open()
 
@@ -677,13 +802,17 @@ class CollectGameScreen(Screen):
                 game_screen.gold_label.text = f"Gold: {current_gold + self.gold}"
                 self.show_winner_popup()
         else:
-            Clock.schedule_once(self.reset_cards, 0.5)
+            Clock.schedule_once(self.hide_cards, 0.5)
 
-    def reset_cards(self, dt):
+    def hide_cards(self, dt):
         for button in self.selected:
             button.text = ""
             button.background_color = (0.7, 0.7, 0.7, 1)
         self.selected = []
+
+    def show_winner_popup(self):
+        content = BoxLayout(orientation="vertical", padding=10)
+        content.add_widget(Label(text=f"Congratulations!\nYou won {self.gold} gold!"))
 
     def show_winner_popup(self):
         popup = Popup(
