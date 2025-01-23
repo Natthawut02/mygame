@@ -18,6 +18,10 @@ from kivy.core.window import Window
 from kivy.core.audio import SoundLoader
 from kivy.graphics import Color, Rectangle
 from random import randint, shuffle
+from kivy.uix.slider import Slider
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.label import Label
+from kivy.core.window import Window
 import random
 
 
@@ -26,9 +30,11 @@ class SettingsPopup(Popup):
         super().__init__(**kwargs)
         self.start_screen = start_screen
         self.title = "Settings"
-        self.size_hint = (0.6, 0.4)
+        self.size_hint = (0.6, 0.6)
 
         layout = BoxLayout(orientation="vertical", spacing=10, padding=20)
+
+        # Section: Sound Controls
         sound_controls = BoxLayout(orientation="vertical", spacing=10)
 
         self.mute_button = Button(
@@ -52,12 +58,29 @@ class SettingsPopup(Popup):
 
         layout.add_widget(sound_controls)
 
+        # Section: Brightness Controls
+        brightness_controls = BoxLayout(orientation="vertical", spacing=10)
+
+        brightness_controls.add_widget(
+            Label(text="Brightness Settings", size_hint=(1, 0.3))
+        )
+
+        self.brightness_slider = Slider(
+            min=0, max=100, value=Window.clearcolor[0] * 100
+        )
+        self.brightness_slider.bind(value=self.on_brightness_change)
+        brightness_controls.add_widget(self.brightness_slider)
+
+        layout.add_widget(brightness_controls)
+
+        # Close Button
         close_button = Button(text="Close", size_hint=(1, 0.3))
         close_button.bind(on_press=self.dismiss)
         layout.add_widget(close_button)
 
         self.content = layout
 
+    # Toggle Mute
     def toggle_mute(self, instance):
         if self.start_screen.background_music:
             if self.start_screen.background_music.volume > 0:
@@ -67,6 +90,7 @@ class SettingsPopup(Popup):
                 self.start_screen.background_music.volume = 0.5
                 self.mute_button.text = "Mute"
 
+    # Volume Up
     def volume_up(self, instance):
         if (
             self.start_screen.background_music
@@ -76,6 +100,7 @@ class SettingsPopup(Popup):
                 1.0, self.start_screen.background_music.volume + 0.1
             )
 
+    # Volume Down
     def volume_down(self, instance):
         if (
             self.start_screen.background_music
@@ -84,6 +109,12 @@ class SettingsPopup(Popup):
             self.start_screen.background_music.volume = max(
                 0, self.start_screen.background_music.volume - 0.1
             )
+
+    # Brightness Change
+    def on_brightness_change(self, instance, value):
+        brightness = value / 100
+        Window.clearcolor = [brightness] * 3 + [1]  # Update brightness
+        print(f"Brightness: {int(value)}%")
 
 
 class StartScreen(Screen):
