@@ -191,16 +191,22 @@ class StartScreen(Screen):
 
     def start_game(self, instance):
         self.manager.current = "game"
+        self.stop_music()
 
     def open_shop(self, instance):
         self.manager.current = "shop"
+        self.stop_music()
 
     def open_collect_game(self, instance):
         self.manager.current = "collect"
+        self.stop_music()
 
-    def on_leave(self):
+    def stop_music(self):
         if self.background_music:
             self.background_music.stop()
+
+    def on_leave(self):
+        self.stop_music()
 
     def on_enter(self):
         if self.background_music and not self.background_music.state == "play":
@@ -276,14 +282,23 @@ class GameScreen(Screen):
         )
         anchor_layout_temp.add_widget(self.temp_label)
 
-        anchor_layout = AnchorLayout(anchor_x="right", anchor_y="top", padding=10)
+        anchor_layout_left = AnchorLayout(anchor_x="left", anchor_y="top", padding=10)
+        settings_button = Button(
+            background_normal="setting.jpeg",
+            size_hint=(None, None),
+            size=(80, 80),
+        )
+        settings_button.bind(on_press=self.toggle_music)
+        anchor_layout_left.add_widget(settings_button)
+
+        anchor_layout_right = AnchorLayout(anchor_x="right", anchor_y="top", padding=10)
         back_button = Button(
             text="Back",
             font_size=14,
             size_hint=(0.05, 0.05),
         )
         back_button.bind(on_press=self.go_back)
-        anchor_layout.add_widget(back_button)
+        anchor_layout_right.add_widget(back_button)
 
         save_button = Button(
             text="Save Game",
@@ -420,7 +435,8 @@ class GameScreen(Screen):
         layout.add_widget(self.water_bar)
 
         layout.add_widget(anchor_layout_temp)
-        layout.add_widget(anchor_layout)
+        layout.add_widget(anchor_layout_left)
+        layout.add_widget(anchor_layout_right)
 
         self.add_widget(layout)
 
@@ -448,6 +464,12 @@ class GameScreen(Screen):
         )
 
         self.alert_sound = None
+
+        # Load and play background music
+        self.background_music = SoundLoader.load("game_music.mp3")
+        if self.background_music:
+            self.background_music.loop = True
+            self.background_music.volume = 0.5
 
     def save_game(self, instance):
         # Placeholder for save game functionality
@@ -535,7 +557,7 @@ class GameScreen(Screen):
             weights=[1, 8, 1],
             k=1,
         )[0]
-        self.temp_label.text = f"Temperature: {temp} °C"
+        self.temp_label.text = f" {temp} °C"
 
         if temp < 25 or temp > 35:
             if not self.alert_sound:
@@ -564,12 +586,30 @@ class GameScreen(Screen):
 
     def go_back(self, instance):
         self.manager.current = "start"
+        self.stop_music()
 
     def open_mini_game(self, instance):
         self.manager.current = "collect"
+        self.stop_music()
 
     def open_shop(self, instance):
         self.manager.current = "shop"
+        self.stop_music()
+
+    def toggle_music(self, instance):
+        if self.background_music:
+            if self.background_music.volume > 0:
+                self.background_music.volume = 0
+            else:
+                self.background_music.volume = 0.5
+
+    def stop_music(self):
+        if self.background_music:
+            self.background_music.stop()
+
+    def on_enter(self):
+        if self.background_music and not self.background_music.state == "play":
+            self.background_music.play()
 
 
 class ShopScreen(Screen):
@@ -902,7 +942,7 @@ class CollectGameScreen(Screen):
             text="Back",
             size_hint=(None, None),
             size=(50, 50),
-            pos_hint={"top": 0.95, "x": 0.05},
+            pos_hint={"top": 0.95, "right": 0.05},
         )
         back_button.bind(on_press=self.go_back)
 
