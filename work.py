@@ -416,13 +416,18 @@ class GameScreen(Screen):
 
         self.animate_monster()
 
-        # Add touch event bindings for food and water images
+        # Add touch event bindings for food, water, and heater images
         self.item_widgets["Food"].children[1].bind(
             on_touch_down=self.on_touch_down_food
         )
         self.item_widgets["Water"].children[1].bind(
             on_touch_down=self.on_touch_down_water
         )
+        self.item_widgets["heater"].children[1].bind(
+            on_touch_down=self.on_touch_down_heater
+        )
+
+        self.alert_sound = None
 
     def save_game(self, instance):
         # Placeholder for save game functionality
@@ -435,6 +440,12 @@ class GameScreen(Screen):
     def on_touch_down_water(self, instance, touch):
         if instance.collide_point(*touch.pos):
             self.increase_water()
+
+    def on_touch_down_heater(self, instance, touch):
+        if instance.collide_point(*touch.pos) and self.items_count["heater"] > 0:
+            if self.alert_sound:
+                self.alert_sound.stop()
+                self.alert_sound = None
 
     def increase_food(self):
         if self.food_bar.value < 100 and self.items_count["Food"] > 0:
@@ -495,8 +506,23 @@ class GameScreen(Screen):
         animation.start(self.monster_image)
 
     def update_temperature(self, dt):
-        new_temp = random.randint(20, 40)
-        self.temp_label.text = f"Temperature: {new_temp} °C"
+        temp = random.choices(
+            population=[
+                random.randint(20, 24),
+                random.randint(25, 35),
+                random.randint(36, 40),
+            ],
+            weights=[1, 8, 1],
+            k=1,
+        )[0]
+        self.temp_label.text = f"Temperature: {temp} °C"
+
+        if temp < 25 or temp > 35:
+            if not self.alert_sound:
+                self.alert_sound = SoundLoader.load("alert.mp3")
+                if self.alert_sound:
+                    self.alert_sound.play()
+            self.health_bar.value = max(0, self.health_bar.value - 1)
 
     def update_monster(self, dt=None):
         monsters = ["diji"]
