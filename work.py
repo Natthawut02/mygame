@@ -17,12 +17,16 @@ from kivy.uix.behaviors import DragBehavior
 from kivy.core.window import Window
 from kivy.core.audio import SoundLoader
 from kivy.graphics import Color, Rectangle
+from kivy.uix.textinput import TextInput
+from kivy.uix.scrollview import ScrollView
 from random import randint, shuffle
 from kivy.uix.slider import Slider
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.core.window import Window
 import random
+import json
+import os
 
 
 class SettingsPopup(Popup):
@@ -165,6 +169,15 @@ class StartScreen(Screen):
         start_button.bind(on_press=self.start_game)
         layout.add_widget(start_button)
 
+        load_button = Button(
+            text="Load Game",
+            font_size=20,
+            size_hint=(0.5, 0.05),
+            pos_hint={"center_x": 0.5},
+        )
+        load_button.bind(on_press=self.load_game)
+        layout.add_widget(load_button)
+
         shop_button = Button(
             text="shop",
             font_size=20,
@@ -191,6 +204,10 @@ class StartScreen(Screen):
 
     def start_game(self, instance):
         self.manager.current = "game"
+        self.stop_music()
+
+    def load_game(self, instance):
+        self.manager.current = "load"
         self.stop_music()
 
     def open_shop(self, instance):
@@ -472,8 +489,45 @@ class GameScreen(Screen):
             self.background_music.volume = 0.5
 
     def save_game(self, instance):
-        # Placeholder for save game functionality
-        pass
+        content = BoxLayout(orientation="vertical", padding=10)
+        save_name_input = TextInput(hint_text="Enter save name", multiline=False)
+        content.add_widget(save_name_input)
+
+        save_button = Button(text="Save", size_hint=(1, 0.3))
+        save_button.bind(on_press=lambda x: self.save_game_state(save_name_input.text))
+        content.add_widget(save_button)
+
+        popup = Popup(
+            title="Save Game", content=content, size_hint=(0.6, 0.4), auto_dismiss=True
+        )
+        popup.open()
+
+    def save_game_state(self, save_name):
+        game_state = {
+            "health": self.health_bar.value,
+            "food": self.food_bar.value,
+            "water": self.water_bar.value,
+            "gold": self.gold_label.text.split()[1],
+            "items_count": self.items_count,
+        }
+        save_path = os.path.join(os.getcwd(), f"{save_name}.json")
+        with open(save_path, "w") as save_file:
+            json.dump(game_state, save_file)
+
+    def load_game_state(self, save_name):
+        save_path = os.path.join(os.getcwd(), f"{save_name}.json")
+        try:
+            with open(save_path, "r") as save_file:
+                game_state = json.load(save_file)
+                self.health_bar.value = game_state["health"]
+                self.food_bar.value = game_state["food"]
+                self.water_bar.value = game_state["water"]
+                self.gold_label.text = f"Gold: {game_state['gold']}"
+                self.items_count = game_state["items_count"]
+                for item, count in self.items_count.items():
+                    self.item_labels[item].text = f"{item}: {count}"
+        except FileNotFoundError:
+            print(f"Error: Save file {save_name}.json not found.")
 
     def on_touch_down_food(self, instance, touch):
         if instance.collide_point(*touch.pos):
@@ -1023,6 +1077,58 @@ class CollectGameScreen(Screen):
         self.manager.current = "game"
 
 
+class LoadGameScreen(Screen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        layout = BoxLayout(orientation="vertical", padding=10, spacing=10)
+
+        self.save_list = GridLayout(cols=1, spacing=10, size_hint_y=None)
+        self.save_list.bind(minimum_height=self.save_list.setter("height"))
+
+        scroll_view = ScrollView(size_hint=(1, 0.8))
+        scroll_view.add_widget(self.save_list)
+
+        layout.add_widget(scroll_view)
+
+        back_button = Button(text="Back", size_hint=(1, 0.1))
+        back_button.bind(on_press=self.go_back)
+        layout.add_widget(back_button)
+
+        self.add_widget(layout)
+
+    def on_enter(self):
+        self.load_saves()
+
+    def load_saves(self):
+        self.save_list.clear_widgets()
+        save_files = [f for f in os.listdir(os.getcwd()) if f.endswith(".json")]
+        for save_file in save_files:
+            save_layout = BoxLayout(size_hint_y=None, height=40)
+            save_button = Button(text=save_file, size_hint_x=0.8)
+            save_button.bind(on_press=lambda instance, sf=save_file: self.load_game(sf))
+            delete_button = Button(text="Delete", size_hint_x=0.2)
+            delete_button.bind(
+                on_press=lambda instance, sf=save_file: self.delete_save(sf)
+            )
+            save_layout.add_widget(save_button)
+            save_layout.add_widget(delete_button)
+            self.save_list.add_widget(save_layout)
+
+    def load_game(self, save_file):
+        game_screen = self.manager.get_screen("game")
+        game_screen.load_game_state(save_file.replace(".json", ""))
+        self.manager.current = "game"
+
+    def delete_save(self, save_file):
+        save_path = os.path.join(os.getcwd(), save_file)
+        if os.path.exists(save_path):
+            os.remove(save_path)
+            self.load_saves()
+
+    def go_back(self, instance):
+        self.manager.current = "start"
+
+
 class GameApp(App):
     def build(self):
         sm = ScreenManager()
@@ -1030,6 +1136,7 @@ class GameApp(App):
         sm.add_widget(GameScreen(name="game"))
         sm.add_widget(ShopScreen(name="shop"))
         sm.add_widget(CollectGameScreen(name="collect"))
+        sm.add_widget(LoadGameScreen(name="load"))
         return sm
 
 
