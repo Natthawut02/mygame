@@ -490,6 +490,11 @@ class GameScreen(Screen):
 
     def save_game(self, instance):
         content = BoxLayout(orientation="vertical", padding=10)
+
+        # Add image to the popup
+        save_image = Image(source="save_icon.png", size_hint=(1, 0.5))
+        content.add_widget(save_image)
+
         save_name_input = TextInput(hint_text="Enter save name", multiline=False)
         content.add_widget(save_name_input)
 
@@ -498,7 +503,7 @@ class GameScreen(Screen):
         content.add_widget(save_button)
 
         popup = Popup(
-            title="Save Game", content=content, size_hint=(0.6, 0.4), auto_dismiss=True
+            title="Save Game", content=content, size_hint=(0.6, 0.6), auto_dismiss=True
         )
         popup.open()
 
