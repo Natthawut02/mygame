@@ -752,6 +752,18 @@ class ShopScreen(Screen):
         back_button.bind(on_press=self.go_back)
         content_layout.add_widget(back_button)
 
+        game_button = Button(
+            text="Game",
+            font_size=24,
+            size_hint=(0.3, 0.1),
+            pos_hint={"center_x": 0.5, "y": 0.1},
+            background_normal="",
+            background_color=(0.2, 0.6, 0.2, 1),
+            bold=True,
+        )
+        game_button.bind(on_press=self.go_to_game)
+        content_layout.add_widget(game_button)
+
         main_layout.add_widget(content_layout)
         self.add_widget(main_layout)
 
@@ -831,6 +843,9 @@ class ShopScreen(Screen):
 
     def go_back(self, instance):
         self.manager.current = "start"
+
+    def go_to_game(self, instance):
+        self.manager.current = "game"
 
 
 class CollectGameScreen(Screen):
