@@ -407,6 +407,34 @@ class GameScreen(Screen):
 
         self.animate_monster()
 
+        # Add touch event bindings for food and water images
+        self.item_widgets["Food"].children[1].bind(
+            on_touch_down=self.on_touch_down_food
+        )
+        self.item_widgets["Water"].children[1].bind(
+            on_touch_down=self.on_touch_down_water
+        )
+
+    def on_touch_down_food(self, instance, touch):
+        if instance.collide_point(*touch.pos):
+            self.increase_food()
+
+    def on_touch_down_water(self, instance, touch):
+        if instance.collide_point(*touch.pos):
+            self.increase_water()
+
+    def increase_food(self):
+        if self.food_bar.value < 100 and self.items_count["Food"] > 0:
+            self.food_bar.value = min(100, self.food_bar.value + 20)
+            self.items_count["Food"] -= 1
+            self.item_labels["Food"].text = f"Food: {self.items_count['Food']}"
+
+    def increase_water(self):
+        if self.water_bar.value < 100 and self.items_count["Water"] > 0:
+            self.water_bar.value = min(100, self.water_bar.value + 20)
+            self.items_count["Water"] -= 1
+            self.item_labels["Water"].text = f"Water: {self.items_count['Water']}"
+
     def check_health(self, dt):
         if self.food_bar.value <= 0 or self.water_bar.value <= 0:
             if self.health_bar.value > 0:
