@@ -1087,6 +1087,12 @@ class LoadGameScreen(Screen):
         super().__init__(**kwargs)
         layout = BoxLayout(orientation="vertical", padding=10, spacing=10)
 
+        # Add background image
+        background = Image(
+            source="load_background.jpeg", allow_stretch=True, keep_ratio=False
+        )
+        self.add_widget(background)
+
         self.save_list = GridLayout(cols=1, spacing=10, size_hint_y=None)
         self.save_list.bind(minimum_height=self.save_list.setter("height"))
 
