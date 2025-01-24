@@ -309,7 +309,7 @@ class GameScreen(Screen):
         )
 
         self.item_widgets = {}
-        self.items_count = {"Food": 5, "Water": 5, "heater": 0, "Toy": 0}
+        self.items_count = {"Food": 0, "Water": 0, "heater": 0, "Toy": 0}
         item_images = {
             "Food": "food.jpeg",
             "Water": "water.jpeg",
@@ -478,7 +478,7 @@ class GameScreen(Screen):
         self.food_bar.value = 80
         self.water_bar.value = 70
         self.monster_image.opacity = 1
-        self.items_count = {"Food": 5, "Water": 5, "heater": 0, "Toy": 0}
+        self.items_count = {"Food": 0, "Water": 0, "heater": 0, "Toy": 0}
 
         for item, count in self.items_count.items():
             self.item_labels[item].text = f"{item}: {count}"
