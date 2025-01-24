@@ -313,12 +313,7 @@ class GameScreen(Screen):
             item_box = BoxLayout(orientation="vertical", spacing=5)
 
             if item in ["Food", "Water"]:
-                item_image = DraggableItem(
-                    main_screen=self,
-                    item_type=item,
-                    source=image_path,
-                    size_hint=(1, 0.8),
-                )
+                item_image = Image(source=image_path, size_hint=(1, 0.8))
             else:
                 item_image = Image(source=image_path, size_hint=(1, 0.8))
 
