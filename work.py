@@ -344,6 +344,15 @@ class GameScreen(Screen):
         mini_game_button.bind(on_press=self.open_mini_game)
         layout.add_widget(mini_game_button)
 
+        sell_button = Button(
+            text="Sell Monster",
+            font_size=14,
+            size_hint=(0.1, 0.05),
+            pos_hint={"x": 0.9, "y": 0.55},
+        )
+        sell_button.bind(on_press=self.sell_monster)
+        layout.add_widget(sell_button)
+
         self.monster_image = Image(
             source="diji.jpeg",
             size_hint=(0.2, 0.3),
@@ -450,6 +459,17 @@ class GameScreen(Screen):
             )
         )
         layout.add_widget(self.water_bar)
+        self.bar_color = Color(1, 0, 0, 1)
+        self.care_bar = ProgressBar(
+            max=100,
+            value=0,
+            size_hint=(0.5, 0.05),
+            pos_hint={"x": 0.3, "y": 0.9},
+        )
+        layout.add_widget(
+            Label(text="Care:", size_hint=(0.2, 0.05), pos_hint={"x": 0.165, "y": 0.9})
+        )
+        layout.add_widget(self.care_bar)
 
         layout.add_widget(anchor_layout_temp)
         layout.add_widget(anchor_layout_left)
@@ -514,6 +534,7 @@ class GameScreen(Screen):
             "water": self.water_bar.value,
             "gold": self.gold_label.text.split()[1],
             "items_count": self.items_count,
+            "care": self.care_bar.value,
         }
         save_path = os.path.join(os.getcwd(), f"{save_name}.json")
         with open(save_path, "w") as save_file:
@@ -529,10 +550,33 @@ class GameScreen(Screen):
                 self.water_bar.value = game_state["water"]
                 self.gold_label.text = f"Gold: {game_state['gold']}"
                 self.items_count = game_state["items_count"]
+                self.care_bar.value = game_state["care"]
                 for item, count in self.items_count.items():
                     self.item_labels[item].text = f"{item}: {count}"
         except FileNotFoundError:
             print(f"Error: Save file {save_name}.json not found.")
+
+    def sell_monster(self, instance):
+        if self.care_bar.value < 100:
+            popup = Popup(
+                title="Cannot Sell",
+                content=Label(
+                    text="Care bar must be full to sell the monster.",
+                    color=(0.8, 0.2, 0.2, 1),
+                ),
+                size_hint=(0.6, 0.2),
+                background_color=(0.9, 0.9, 0.9, 1),
+            )
+            popup.open()
+            return
+
+        sell_price = 50  # Define the price for selling the monster
+        current_gold = int(self.gold_label.text.split()[1])
+        self.gold_label.text = f"Gold: {current_gold + sell_price}"
+        self.monster_image.source = (
+            "default_monster.jpeg"  # Reset to default monster image
+        )
+        self.monster_image.reload()
 
     def on_touch_down_food(self, instance, touch):
         if instance.collide_point(*touch.pos):
@@ -550,15 +594,17 @@ class GameScreen(Screen):
 
     def increase_food(self):
         if self.food_bar.value < 100 and self.items_count["Food"] > 0:
-            self.food_bar.value = min(100, self.food_bar.value + 20)
+            self.food_bar.value = min(100, self.food_bar.value + 10)
             self.items_count["Food"] -= 1
             self.item_labels["Food"].text = f"Food: {self.items_count['Food']}"
+            self.care_bar.value = min(100, self.care_bar.value + 5)
 
     def increase_water(self):
         if self.water_bar.value < 100 and self.items_count["Water"] > 0:
-            self.water_bar.value = min(100, self.water_bar.value + 20)
+            self.water_bar.value = min(100, self.water_bar.value + 10)
             self.items_count["Water"] -= 1
             self.item_labels["Water"].text = f"Water: {self.items_count['Water']}"
+            self.care_bar.value = min(100, self.care_bar.value + 5)
 
     def check_health(self, dt):
         if self.food_bar.value <= 0 or self.water_bar.value <= 0:
@@ -591,6 +637,7 @@ class GameScreen(Screen):
         self.water_bar.value = 70
         self.monster_image.opacity = 1
         self.items_count = {"Food": 0, "Water": 0, "heater": 0, "Toy": 0}
+        self.care_bar.value = 0
 
         for item, count in self.items_count.items():
             self.item_labels[item].text = f"{item}: {count}"
@@ -749,8 +796,6 @@ class ShopScreen(Screen):
             font_size=28,
             color=(1, 0.8, 0.2, 1),
             bold=True,
-            outline_width=1,
-            outline_color=(0, 0, 0, 1),
             size_hint=(1, 1),
             pos_hint={"center_y": 0.5},
         )
