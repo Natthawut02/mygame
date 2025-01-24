@@ -906,9 +906,18 @@ class CollectGameScreen(Screen):
         )
         back_button.bind(on_press=self.go_back)
 
+        game_button = Button(
+            text="Game",
+            size_hint=(None, None),
+            size=(50, 50),
+            pos_hint={"bottom": 0.05, "right": 0.05},
+        )
+        game_button.bind(on_press=self.go_to_game)
+
         main_layout.add_widget(self.game_layout)
         main_layout.add_widget(gold_layout)
         main_layout.add_widget(back_button)
+        main_layout.add_widget(game_button)
 
         self.add_widget(main_layout)
 
@@ -945,10 +954,6 @@ class CollectGameScreen(Screen):
         self.selected = []
 
     def show_winner_popup(self):
-        content = BoxLayout(orientation="vertical", padding=10)
-        content.add_widget(Label(text=f"Congratulations!\nYou won {self.gold} gold!"))
-
-    def show_winner_popup(self):
         popup = Popup(
             title="Congratulations!",
             content=Label(text=f"You won!\nYou got {self.gold} gold!"),
@@ -972,6 +977,10 @@ class CollectGameScreen(Screen):
     def go_back(self, instance):
         self.reset_game()
         self.manager.current = "start"
+
+    def go_to_game(self, instance):
+        self.reset_game()
+        self.manager.current = "game"
 
 
 class GameApp(App):
