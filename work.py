@@ -294,6 +294,24 @@ class GameScreen(Screen):
         save_button.bind(on_press=self.save_game)
         layout.add_widget(save_button)
 
+        shop_button = Button(
+            text="Shop",
+            font_size=14,
+            size_hint=(0.1, 0.05),
+            pos_hint={"x": 0.9, "y": 0.65},
+        )
+        shop_button.bind(on_press=self.open_shop)
+        layout.add_widget(shop_button)
+
+        mini_game_button = Button(
+            text="Mini Game",
+            font_size=14,
+            size_hint=(0.1, 0.05),
+            pos_hint={"x": 0.9, "y": 0.75},
+        )
+        mini_game_button.bind(on_press=self.open_mini_game)
+        layout.add_widget(mini_game_button)
+
         self.monster_image = Image(
             source="diji.jpeg",
             size_hint=(0.2, 0.3),
@@ -546,6 +564,12 @@ class GameScreen(Screen):
 
     def go_back(self, instance):
         self.manager.current = "start"
+
+    def open_mini_game(self, instance):
+        self.manager.current = "collect"
+
+    def open_shop(self, instance):
+        self.manager.current = "shop"
 
 
 class ShopScreen(Screen):
