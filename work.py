@@ -285,6 +285,15 @@ class GameScreen(Screen):
         back_button.bind(on_press=self.go_back)
         anchor_layout.add_widget(back_button)
 
+        save_button = Button(
+            text="Save Game",
+            font_size=14,
+            size_hint=(0.1, 0.05),
+            pos_hint={"x": 0.9, "y": 0.85},
+        )
+        save_button.bind(on_press=self.save_game)
+        layout.add_widget(save_button)
+
         self.monster_image = Image(
             source="diji.jpeg",
             size_hint=(0.2, 0.3),
@@ -414,6 +423,10 @@ class GameScreen(Screen):
         self.item_widgets["Water"].children[1].bind(
             on_touch_down=self.on_touch_down_water
         )
+
+    def save_game(self, instance):
+        # Placeholder for save game functionality
+        pass
 
     def on_touch_down_food(self, instance, touch):
         if instance.collide_point(*touch.pos):
