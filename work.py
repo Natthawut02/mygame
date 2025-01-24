@@ -411,7 +411,9 @@ class GameScreen(Screen):
 
         self.update_temperature(0)
         self.update_monster()
-        Clock.schedule_interval(self.update_temperature, 120)
+        Clock.schedule_interval(
+            self.update_temperature, 120
+        )  # Update temperature every 2 minutes
         Clock.schedule_interval(self.update_monster, 30)
 
         self.animate_monster()
