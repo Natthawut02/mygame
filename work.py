@@ -923,18 +923,6 @@ class ShopScreen(Screen):
         game_button.bind(on_press=self.go_to_game)
         content_layout.add_widget(game_button)
 
-        buy_monster_button = Button(
-            text="Buy Monster",
-            font_size=24,
-            size_hint=(0.3, 0.1),
-            pos_hint={"center_x": 0.5, "y": 0.2},
-            background_normal="",
-            background_color=(0.2, 0.6, 0.2, 1),
-            bold=True,
-        )
-        buy_monster_button.bind(on_press=self.go_to_buy_monster)
-        content_layout.add_widget(buy_monster_button)
-
         main_layout.add_widget(content_layout)
 
         # Add logo to the bottom left corner
@@ -1027,9 +1015,6 @@ class ShopScreen(Screen):
 
     def go_to_game(self, instance):
         self.manager.current = "game"
-
-    def go_to_buy_monster(self, instance):
-        self.manager.current = "buy_monster"
 
 
 class BuyMonsterScreen(Screen):
