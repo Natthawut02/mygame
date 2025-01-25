@@ -746,6 +746,9 @@ class ShopScreen(Screen):
             print("Warning: Could not load shop music")
             self.shop_music = None
 
+        # Load purchase sound
+        self.purchase_sound = SoundLoader.load("purchase.mp3")
+
         main_layout = FloatLayout()
 
         background = Image(
@@ -988,15 +991,9 @@ class ShopScreen(Screen):
             )
             popup.open()
 
-            # พยายามเล่นเสียงซื้อของ ถ้าไม่มีไฟล์ก็จะข้ามไป
-            try:
-                # ลองใช้เสียงตัวอื่นที่มีอยู่แล้วในเกม
-                purchase_sound = SoundLoader.load("shop.mp3")  # ใช้เสียงร้านค้าแทน
-                if purchase_sound:
-                    purchase_sound.volume = 0.3  # ลดเสียงลงเพื่อไม่ให้ดังเกินไป
-                    purchase_sound.play()
-            except:
-                print("Warning: Could not play purchase sound")
+            # Play purchase sound
+            if self.purchase_sound:
+                self.purchase_sound.play()
         else:
             needed_gold = item_price - current_gold
             popup = Popup(
